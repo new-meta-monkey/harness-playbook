@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <title>The Harness Playbook: Making AI Agents Production Ready</title>
+  <meta name="description" content="A practical guide to agent harnesses, the control layer that makes enterprise AI agents safer, testable, observable, and reliable." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,650;6..72,750&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { color-scheme: light dark; --bg:#f6f7f4; --paper:#fff; --ink:#17211f; --muted:#51605c; --line:#cfd7d2; --signal:#e84f35; --signal-soft:#fce5df; --teal:#007c75; --teal-soft:#dcefeb; --code:#102522; --code-ink:#e9f4f0; --shadow:0 18px 45px rgba(23,33,31,.09); --max:1180px; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#101614; --paper:#17201d; --ink:#edf4f0; --muted:#afbbb7; --line:#35433f; --signal:#ff765d; --signal-soft:#3a211d; --teal:#5bd0c5; --teal-soft:#153b36; --code:#08110f; --code-ink:#edf7f3; --shadow:0 20px 55px rgba(0,0,0,.28); } }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:"Work Sans",sans-serif; font-size:17px; line-height:1.62; overflow-x:hidden; }
+    a { color:inherit; }
+    button { font:inherit; }
+    .progress { position:fixed; inset:0 0 auto; height:4px; background:linear-gradient(90deg,var(--signal),var(--teal)); transform:scaleX(0); transform-origin:left; z-index:20; }
+    .hero { position:relative; overflow:hidden; border-bottom:1px solid var(--line); background:linear-gradient(90deg,color-mix(in srgb,var(--line) 38%,transparent) 1px,transparent 1px),linear-gradient(color-mix(in srgb,var(--line) 38%,transparent) 1px,transparent 1px),var(--paper); background-size:38px 38px; }
+    .hero::after { content:""; position:absolute; width:420px; height:420px; right:-150px; top:-190px; border:90px solid color-mix(in srgb,var(--teal) 14%,transparent); border-radius:50%; pointer-events:none; }
+    .hero-inner { max-width:var(--max); margin:auto; padding:76px 28px 64px; display:grid; grid-template-columns:1.05fr .95fr; gap:58px; align-items:center; position:relative; z-index:1; }
+    .kicker { display:inline-flex; align-items:center; gap:10px; font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--teal); margin-bottom:18px; }
+    .kicker::before { content:""; width:28px; height:3px; background:var(--signal); }
+    h1,h2,h3,.quote { font-family:"Newsreader",serif; }
+    h1 { font-size:clamp(3.2rem,7vw,6.5rem); line-height:.91; letter-spacing:-.055em; max-width:780px; margin:0; text-wrap:balance; }
+    h1 span { color:var(--signal); }
+    .deck { max-width:690px; font-size:clamp(1.08rem,1.7vw,1.33rem); line-height:1.5; color:var(--muted); margin:26px 0 0; }
+    .hero-note { margin-top:30px; padding-top:18px; border-top:1px solid var(--line); display:flex; flex-wrap:wrap; gap:12px 28px; font-size:.83rem; font-family:"IBM Plex Mono",monospace; color:var(--muted); }
+    .hero-note strong { color:var(--ink); }
+    .harness-visual { min-height:500px; display:grid; place-items:center; position:relative; }
+    .orbit { width:min(100%,480px); aspect-ratio:1; position:relative; border:1px dashed var(--line); border-radius:50%; background:color-mix(in srgb,var(--paper) 78%,transparent); box-shadow:var(--shadow); }
+    .orbit::before,.orbit::after { content:""; position:absolute; border:1px solid var(--line); border-radius:50%; inset:16%; }
+    .orbit::after { inset:32%; border-style:dashed; }
+    .model-core { position:absolute; inset:38%; display:grid; place-items:center; border-radius:50%; background:var(--ink); color:var(--bg); font:600 .8rem/1.2 "IBM Plex Mono",monospace; text-align:center; z-index:2; }
+    .node { position:absolute; min-width:112px; padding:10px 12px; border:1px solid var(--line); background:var(--paper); box-shadow:0 8px 24px rgba(0,0,0,.08); font:600 .72rem/1.25 "IBM Plex Mono",monospace; text-align:center; }
+    .n1 { left:50%; top:3%; transform:translateX(-50%); } .n2 { right:-2%; top:25%; } .n3 { right:4%; bottom:18%; } .n4 { left:50%; bottom:2%; transform:translateX(-50%); } .n5 { left:-3%; bottom:18%; } .n6 { left:-5%; top:25%; }
+    .visual-caption { position:absolute; bottom:-5px; right:10px; font:500 .7rem/1.35 "IBM Plex Mono",monospace; color:var(--muted); max-width:230px; text-align:right; }
+    .hero-diagram { width:min(100%,520px); height:auto; overflow:visible; filter:drop-shadow(0 18px 28px rgba(23,33,31,.12)); }
+    .hero-diagram text,.runtime-diagram text { font-family:"Work Sans",sans-serif; fill:#17211f; }
+    .hero-diagram .mono,.runtime-diagram .mono { font-family:"IBM Plex Mono",monospace; font-weight:600; letter-spacing:.03em; }
+    .hero-diagram text.light,.runtime-diagram text.light { fill:#fff; }
+    .hero-diagram .connector,.runtime-diagram .connector { fill:none; stroke:#71827d; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+    .hero-diagram .dash { stroke-dasharray:7 7; }
+    .page { max-width:var(--max); margin:auto; padding:0 28px 80px; display:grid; grid-template-columns:190px minmax(0,780px); gap:60px; justify-content:center; }
+    .toc { position:sticky; top:26px; align-self:start; margin-top:84px; font:500 .78rem/1.4 "IBM Plex Mono",monospace; }
+    .toc strong { display:block; color:var(--muted); margin-bottom:12px; }
+    .toc a { display:block; text-decoration:none; color:var(--muted); padding:8px 0 8px 12px; border-left:2px solid var(--line); transition:color .2s,border-color .2s; }
+    .toc a:hover,.toc a.active { color:var(--ink); border-color:var(--signal); }
+    article { min-width:0; }
+    section { padding-top:84px; scroll-margin-top:18px; }
+    h2 { font-size:clamp(2.2rem,5vw,4rem); line-height:1; letter-spacing:-.035em; margin:0 0 18px; text-wrap:balance; }
+    h3 { font-size:1.55rem; line-height:1.15; margin:0 0 8px; }
+    .lead { font-size:1.18rem; color:var(--muted); max-width:710px; }
+    .quote { margin:34px 0; padding:26px 28px 22px; border-top:5px solid var(--signal); border-bottom:1px solid var(--line); font-size:clamp(1.65rem,3.5vw,2.7rem); line-height:1.08; letter-spacing:-.02em; background:var(--paper); }
+    .quote small { display:block; margin-top:14px; font:500 .78rem/1.4 "IBM Plex Mono",monospace; color:var(--muted); letter-spacing:0; }
+    .plain-list { list-style:none; padding:0; margin:28px 0; border-top:1px solid var(--line); }
+    .plain-list li { display:grid; grid-template-columns:32px 1fr; gap:14px; padding:15px 0; border-bottom:1px solid var(--line); }
+    .plain-list .mark { width:24px; height:24px; border-radius:50%; display:grid; place-items:center; background:var(--teal-soft); color:var(--teal); font:600 .72rem "IBM Plex Mono",monospace; }
+    .plain-list p { margin:3px 0 0; color:var(--muted); }
+    .compare { width:100%; border-collapse:collapse; margin:32px 0; font-size:.97rem; }
+    .compare th,.compare td { text-align:left; padding:16px; border-bottom:1px solid var(--line); vertical-align:top; }
+    .compare th { font:600 .76rem/1.3 "IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+    .compare td:first-child { font-weight:600; width:25%; }
+    .compare td:nth-child(2) { background:var(--signal-soft); }
+    .compare td:nth-child(3) { background:var(--teal-soft); }
+    .anatomy { display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--line); border:1px solid var(--line); margin-top:32px; }
+    .layer { background:var(--paper); padding:24px; min-height:190px; }
+    .layer:nth-child(3n+1) .layer-num { background:var(--signal-soft); color:var(--signal); }
+    .layer-num { display:inline-grid; place-items:center; width:36px; height:36px; border-radius:50%; background:var(--teal-soft); color:var(--teal); font:600 .75rem "IBM Plex Mono",monospace; margin-bottom:22px; }
+    .layer p { margin:0; color:var(--muted); }
+    .flow { margin:34px 0; padding:26px; background:var(--code); color:var(--code-ink); box-shadow:var(--shadow); }
+    .flow-label { color:#8db4aa; font:500 .74rem "IBM Plex Mono",monospace; margin-bottom:18px; }
+    .flow-row { display:grid; grid-template-columns:repeat(6,1fr); align-items:stretch; }
+    .flow-step { min-height:112px; display:flex; flex-direction:column; justify-content:space-between; gap:12px; padding:14px; border:1px solid #33534b; position:relative; }
+    .flow-step:not(:last-child)::after { content:"›"; position:absolute; right:-10px; top:37px; width:18px; height:28px; display:grid; place-items:center; color:#82e0d4; background:var(--code); z-index:2; font-size:1.5rem; }
+    .flow-step b { color:#fff; font-size:.87rem; }
+    .flow-step span { color:#a8c5bd; font-size:.75rem; line-height:1.35; }
+    .feedback { text-align:center; color:#ff907b; font:500 .72rem "IBM Plex Mono",monospace; padding-top:14px; }
+    .feedback::before { content:"↖"; margin-right:8px; }
+    .diagram-frame { margin:34px 0; padding:22px; background:var(--paper); border:1px solid var(--line); box-shadow:var(--shadow); }
+    .diagram-head { display:flex; justify-content:space-between; gap:20px; align-items:baseline; margin-bottom:16px; }
+    .diagram-head strong { font-family:"Newsreader",serif; font-size:1.3rem; }
+    .diagram-head span { color:var(--muted); font:500 .7rem "IBM Plex Mono",monospace; text-align:right; }
+    .runtime-diagram { width:100%; height:auto; display:block; }
+    .case-study { border-top:1px solid var(--line); padding:30px 0; display:grid; grid-template-columns:150px 1fr; gap:26px; }
+    .case-tag { font:600 .72rem/1.35 "IBM Plex Mono",monospace; color:var(--teal); text-transform:uppercase; letter-spacing:.06em; }
+    .case-study p { margin:7px 0 14px; color:var(--muted); }
+    .metrics { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+    .metric { padding:10px 12px; border:1px solid var(--line); background:var(--paper); }
+    .metric b { display:block; color:var(--signal); font-size:1.15rem; }
+    .metric small { color:var(--muted); }
+    .pattern-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:26px; }
+    .pattern { padding:22px 0; border-top:3px solid var(--ink); }
+    .pattern p { margin:8px 0 0; color:var(--muted); }
+    .badge { display:inline-block; padding:4px 8px; border:1px solid var(--line); font:600 .67rem "IBM Plex Mono",monospace; color:var(--muted); margin-top:10px; }
+    .lab-compare { display:grid; grid-template-columns:1fr 64px 1fr; gap:0; margin:30px 0; border:1px solid var(--line); background:var(--line); }
+    .lab-side { background:var(--paper); padding:26px; }
+    .lab-side.without { border-top:5px solid var(--signal); }
+    .lab-side.with { border-top:5px solid var(--teal); }
+    .lab-side p { margin:8px 0 16px; color:var(--muted); }
+    .lab-side ul { margin:0; padding-left:20px; }
+    .lab-side li { margin:8px 0; }
+    .lab-vs { display:grid; place-items:center; background:var(--ink); color:var(--bg); font:700 .72rem "IBM Plex Mono",monospace; }
+    .repo-plan { margin-top:24px; padding:24px; background:var(--teal-soft); border-top:4px solid var(--teal); }
+    .repo-plan h3 { margin-bottom:12px; }
+    .repo-plan ul { margin:0; padding-left:20px; }
+    .repo-plan li { margin:8px 0; }
+    .repo-status { display:inline-block; margin-top:14px; padding:6px 9px; background:var(--paper); color:var(--teal); font:600 .68rem "IBM Plex Mono",monospace; }
+    .playbook { counter-reset:step; list-style:none; padding:0; margin:30px 0 0; }
+    .playbook li { counter-increment:step; display:grid; grid-template-columns:74px 1fr; gap:20px; border-top:1px solid var(--line); padding:20px 0; }
+    .playbook li::before { content:"0" counter(step); font:600 1.35rem "IBM Plex Mono",monospace; color:var(--signal); }
+    .playbook b { display:block; font-size:1.08rem; }
+    .playbook p { margin:4px 0 0; color:var(--muted); }
+    .code-panel { background:var(--code); color:var(--code-ink); padding:24px; margin:30px 0; overflow-wrap:anywhere; }
+    .code-panel pre { white-space:pre-wrap; margin:0; font:400 .82rem/1.7 "IBM Plex Mono",monospace; }
+    .code-panel .c { color:#87b2a7; } .code-panel .k { color:#ff8f78; }
+    .check-box { margin-top:28px; background:var(--paper); border:1px solid var(--line); box-shadow:var(--shadow); }
+    .check-head { padding:20px 24px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:14px; }
+    .check-head h3 { margin:0; }
+    .copy-btn { border:1px solid var(--ink); background:var(--ink); color:var(--bg); padding:9px 12px; cursor:pointer; font:600 .74rem "IBM Plex Mono",monospace; }
+    .copy-btn:hover { background:var(--signal); border-color:var(--signal); color:#fff; }
+    .checklist { list-style:none; padding:0 24px 16px; margin:0; }
+    .checklist li { padding:12px 0 12px 30px; border-bottom:1px solid var(--line); position:relative; }
+    .checklist li:last-child { border:0; }
+    .checklist li::before { content:"□"; position:absolute; left:0; top:11px; color:var(--teal); font:600 1rem "IBM Plex Mono",monospace; }
+    .sources { border-top:1px solid var(--line); }
+    .source { display:grid; grid-template-columns:42px 1fr auto; gap:16px; align-items:start; padding:18px 0; border-bottom:1px solid var(--line); }
+    .source-num { font:600 .8rem "IBM Plex Mono",monospace; color:var(--signal); }
+    .source p { margin:3px 0 0; color:var(--muted); font-size:.9rem; }
+    .source a { color:var(--teal); font:600 .72rem "IBM Plex Mono",monospace; text-decoration:none; border-bottom:1px solid currentColor; }
+    .takeaway { margin-top:70px; padding:36px; background:var(--signal); color:#fff; position:relative; overflow:hidden; }
+    .takeaway::after { content:""; position:absolute; width:180px; height:180px; border:42px solid rgba(255,255,255,.14); border-radius:50%; right:-65px; top:-70px; }
+    .takeaway h2 { max-width:650px; position:relative; z-index:1; }
+    .takeaway p { max-width:620px; font-size:1.1rem; position:relative; z-index:1; }
+    sup a { color:var(--signal); text-decoration:none; font:600 .7rem "IBM Plex Mono",monospace; }
+    footer { max-width:var(--max); margin:0 auto; padding:0 28px 48px; color:var(--muted); font:500 .72rem/1.5 "IBM Plex Mono",monospace; }
+    @media (max-width:900px) { .hero-inner { grid-template-columns:1fr; padding-top:54px; } .harness-visual { min-height:420px; } .orbit { width:min(82vw,420px); } .page { grid-template-columns:1fr; } .toc { display:none; } article { width:100%; } .flow-row { grid-template-columns:repeat(3,1fr); } .flow-step:nth-child(3)::after { display:none; } }
+    @media (max-width:620px) { body { font-size:16px; } .hero-inner { padding:42px 18px 50px; gap:34px; } h1 { font-size:clamp(3rem,15vw,4.6rem); } .hero-note { display:grid; gap:8px; } .harness-visual { min-height:330px; } .orbit { width:310px; } .node { min-width:84px; padding:8px 7px; font-size:.58rem; } .visual-caption { display:none; } .page { padding:0 18px 56px; } section { padding-top:64px; } .anatomy,.pattern-grid { grid-template-columns:1fr; } .layer { min-height:auto; } .flow { padding:20px; margin-left:-6px; margin-right:-6px; } .flow-row { grid-template-columns:1fr; } .flow-step { min-height:auto; } .flow-step:not(:last-child)::after { content:"⌄"; display:grid; right:50%; top:auto; bottom:-15px; transform:translateX(50%); width:28px; height:20px; } .case-study { grid-template-columns:1fr; gap:7px; } .compare,.compare tbody,.compare tr,.compare td { display:block; width:100%; } .compare thead { display:none; } .compare tr { border-bottom:1px solid var(--line); padding:14px 0; } .compare td { border:0; padding:10px 12px; } .compare td::before { content:attr(data-label); display:block; font:600 .68rem "IBM Plex Mono",monospace; text-transform:uppercase; color:var(--muted); margin-bottom:4px; } .compare td:first-child { width:100%; padding-left:0; font-size:1.08rem; } .playbook li { grid-template-columns:48px 1fr; gap:10px; } .check-head { align-items:flex-start; flex-direction:column; } .source { grid-template-columns:34px 1fr; } .source>a { grid-column:2; justify-self:start; } .takeaway { padding:28px 22px; } }
+    @media (max-width:620px) { .hero-diagram { width:100%; } .diagram-frame { padding:14px 10px; margin-left:-6px; margin-right:-6px; } .diagram-head { align-items:flex-start; flex-direction:column; gap:3px; } .diagram-head span { text-align:left; } .runtime-diagram { min-width:0; } .lab-compare { grid-template-columns:1fr; } .lab-vs { padding:9px; } }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
+  </style>
+</head>
+<body>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+  <header class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="kicker">Beyond the model</div>
+        <h1>The Harness Playbook: Making AI Agents Production Ready</h1>
+        <p class="deck">As developers, we know a strong model can reason, write code, and call tools. But when we put an agent into production, it also needs to know what it may do, prove what it did, recover safely, and hand control to a person at the right moment. The harness makes that possible.</p>
+        <div class="hero-note"><span><strong>Read time</strong> 9 minutes</span><span><strong>For</strong> Agent builders, tech leads, platform teams</span><span><strong>Focus</strong> Enterprise delivery</span></div>
+      </div>
+      <div class="harness-visual">
+        <svg class="hero-diagram" viewBox="0 0 560 500" role="img" aria-labelledby="heroDiagramTitle heroDiagramDesc">
+          <title id="heroDiagramTitle">The model inside an enterprise agent harness</title>
+          <desc id="heroDiagramDesc">A central language model is connected to context, tools, policy, evaluation, observability, and recovery controls.</desc>
+          <defs><marker id="heroArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#71827d" /></marker></defs>
+          <circle cx="280" cy="248" r="214" fill="var(--paper)" stroke="var(--line)" stroke-width="2" />
+          <circle cx="280" cy="248" r="140" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="8 8" />
+          <path class="connector" marker-end="url(#heroArrow)" d="M280 99 V159" /><path class="connector" marker-end="url(#heroArrow)" d="M414 172 L355 203" /><path class="connector" marker-end="url(#heroArrow)" d="M421 343 L356 300" /><path class="connector" marker-end="url(#heroArrow)" d="M280 397 V337" /><path class="connector" marker-end="url(#heroArrow)" d="M139 338 L203 299" /><path class="connector" marker-end="url(#heroArrow)" d="M140 168 L203 201" />
+          <rect x="210" y="184" width="140" height="128" rx="28" fill="#17211f" />
+          <text x="280" y="239" text-anchor="middle" class="mono light" font-size="15">LANGUAGE</text><text x="280" y="263" text-anchor="middle" class="mono light" font-size="15">MODEL</text><text x="280" y="286" text-anchor="middle" class="light" font-size="12">reason + propose</text>
+          <g><rect x="197" y="31" width="166" height="68" rx="15" fill="#bfe9e2" stroke="#007c75" /><text x="280" y="60" text-anchor="middle" class="mono" font-size="13">CONTEXT + MEMORY</text><text x="280" y="80" text-anchor="middle" font-size="12">load what matters</text></g>
+          <g><rect x="395" y="118" width="150" height="68" rx="15" fill="#ffe2a8" stroke="#b56a00" /><text x="470" y="147" text-anchor="middle" class="mono" font-size="13">TOOL CONTRACTS</text><text x="470" y="167" text-anchor="middle" font-size="12">scope every action</text></g>
+          <g><rect x="394" y="319" width="151" height="68" rx="15" fill="#ffd2cb" stroke="#e84f35" /><text x="470" y="348" text-anchor="middle" class="mono" font-size="13">POLICY + APPROVAL</text><text x="470" y="368" text-anchor="middle" font-size="12">stop risky work</text></g>
+          <g><rect x="197" y="397" width="166" height="68" rx="15" fill="#d9d2ff" stroke="#6653c7" /><text x="280" y="426" text-anchor="middle" class="mono" font-size="13">EVALS + VERIFIERS</text><text x="280" y="446" text-anchor="middle" font-size="12">prove the result</text></g>
+          <g><rect x="15" y="319" width="151" height="68" rx="15" fill="#cfe4ff" stroke="#3478b8" /><text x="90" y="348" text-anchor="middle" class="mono" font-size="13">TRACES + COST</text><text x="90" y="368" text-anchor="middle" font-size="12">make runs visible</text></g>
+          <g><rect x="15" y="118" width="151" height="68" rx="15" fill="#d9efc4" stroke="#4d8b34" /><text x="90" y="147" text-anchor="middle" class="mono" font-size="13">RETRY + RECOVERY</text><text x="90" y="167" text-anchor="middle" font-size="12">resume safely</text></g>
+        </svg>
+        <div class="visual-caption">The model proposes. The harness owns the run.</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="toc" aria-label="On this page"><strong>ON THIS PAGE</strong><a href="#shift">01 The shift</a><a href="#anatomy">02 Six layers</a><a href="#loop">03 Runtime loop</a><a href="#industry">04 Industry proof</a><a href="#practice">05 Delivery playbook</a><a href="#lab">06 Companion lab</a><a href="#checklist">07 Review checklist</a><a href="#sources">Sources</a></nav>
+    <article>
+      <section id="shift">
+        <div class="kicker">01 · The shift</div><h2>Stop treating the model as the product</h2><p class="lead">The model provides reasoning. Our harness turns that reasoning into controlled work inside a real environment.</p>
+        <p>Most of us have seen the same pattern: the first demo feels magical, then production asks harder questions. Which data can it see? Which tools can it call? What happens halfway through a failed run? Who approves a risky action? Those questions are not model questions. They are engineering questions, and the harness is where we answer them.</p>
+        <div class="quote">“The model proposes. We decide what can run, what must be checked, and when a human takes over.”<small>A developer’s production mental model</small></div>
+        <p>AI Engineer describes the harness as the control layer for lifecycle, shared state, permissions, conversation threads, and human approval.<sup><a href="#s1">[1]</a></sup> Anthropic makes a related distinction: workflows follow paths defined in code, while agents choose their own path at runtime.<sup><a href="#s2">[2]</a></sup></p>
+        <ul class="plain-list"><li><span class="mark">1</span><div><strong>A model answers.</strong><p>We need an agent to act through tools and keep working until the goal or a stop condition is reached.</p></div></li><li><span class="mark">2</span><div><strong>A prompt suggests.</strong><p>We need the harness to enforce permissions, timeouts, approval gates, budgets, and output contracts.</p></div></li><li><span class="mark">3</span><div><strong>A demo works once.</strong><p>We need traces, edge-case tests, and a habit of turning every failure into a regression check.</p></div></li></ul>
+        <table class="compare" aria-label="Model only system compared with harnessed agent"><thead><tr><th>Concern</th><th>Model only</th><th>Harnessed agent</th></tr></thead><tbody><tr><td data-label="Concern">Tool access</td><td data-label="Model only">Broad functions exposed through a prompt</td><td data-label="Harnessed agent">Typed tools, scoped credentials, policy checks</td></tr><tr><td data-label="Concern">Bad output</td><td data-label="Model only">Retry and hope</td><td data-label="Harnessed agent">Validate, repair, retry within a limit, then escalate</td></tr><tr><td data-label="Concern">Long tasks</td><td data-label="Model only">Context grows until quality drops</td><td data-label="Harnessed agent">Checkpoints, summaries, durable task state</td></tr><tr><td data-label="Concern">Production issue</td><td data-label="Model only">“The AI did something wrong”</td><td data-label="Harnessed agent">Trace shows the input, decision, tool call, result, and policy outcome</td></tr></tbody></table>
+      </section>
+
+      <section id="anatomy">
+        <div class="kicker">02 · Anatomy</div><h2>Six layers that make an agent shippable</h2><p class="lead">These are the layers we should be able to explain in a design review. They stay model neutral, so we can change GPT, Claude, Gemini, or a smaller model without rebuilding the product contract.</p>
+        <div class="anatomy"><div class="layer"><span class="layer-num">01</span><h3>Context and memory</h3><p>Load the smallest useful context. Separate user, task, and system state. Summarise long runs instead of sending everything again.</p></div><div class="layer"><span class="layer-num">02</span><h3>Tool contracts</h3><p>Give every tool a clear name, typed input, typed output, timeout, error shape, and idempotency rule. Treat tools like internal APIs.</p></div><div class="layer"><span class="layer-num">03</span><h3>Policy and identity</h3><p>Use least privilege. Keep read, write, and destructive actions separate. Put policy in code, not only in the system prompt.</p></div><div class="layer"><span class="layer-num">04</span><h3>Execution control</h3><p>Set maximum steps, cost budgets, retry limits, cancellation, checkpoints, and safe resume behavior.</p></div><div class="layer"><span class="layer-num">05</span><h3>Verification</h3><p>Check structure, facts, tests, business rules, and final state. A tool saying “success” is not always proof that the goal was reached.</p></div><div class="layer"><span class="layer-num">06</span><h3>Observability</h3><p>Capture traces, latency, tokens, tool outcomes, policy blocks, and human overrides. Redact sensitive data before it enters logs.</p></div></div>
+      </section>
+
+      <section id="loop">
+        <div class="kicker">03 · Runtime loop</div><h2>A robust run is a controlled loop</h2><p class="lead">We can let the agent choose the next step without giving up control. Our harness still owns every boundary around that choice.</p>
+        <div class="diagram-frame">
+          <div class="diagram-head"><strong>One controlled agent cycle</strong><span>DECIDE → GUARD → ACT → PROVE</span></div>
+          <svg class="runtime-diagram" viewBox="0 0 920 310" role="img" aria-labelledby="runtimeTitle runtimeDesc">
+            <title id="runtimeTitle">Agent harness runtime flow</title><desc id="runtimeDesc">The harness receives a goal, assembles context, lets the model decide, guards the action, executes it, verifies the result, and loops only when useful.</desc>
+            <defs><marker id="runArrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#71827d" /></marker></defs>
+            <path class="connector" marker-end="url(#runArrow)" d="M142 100 H170" /><path class="connector" marker-end="url(#runArrow)" d="M292 100 H320" /><path class="connector" marker-end="url(#runArrow)" d="M442 100 H470" /><path class="connector" marker-end="url(#runArrow)" d="M592 100 H620" /><path class="connector" marker-end="url(#runArrow)" d="M742 100 H770" />
+            <path class="connector dash" marker-end="url(#runArrow)" d="M831 157 C831 252 381 272 381 165" />
+            <g><rect x="20" y="42" width="122" height="116" rx="14" fill="#cfe4ff" stroke="#3478b8" /><text x="81" y="73" text-anchor="middle" class="mono" font-size="13">1 · RECEIVE</text><text x="81" y="103" text-anchor="middle" font-size="12">goal + identity</text><text x="81" y="124" text-anchor="middle" font-size="12">tenant + risk</text></g>
+            <g><rect x="170" y="42" width="122" height="116" rx="14" fill="#bfe9e2" stroke="#007c75" /><text x="231" y="73" text-anchor="middle" class="mono" font-size="13">2 · ASSEMBLE</text><text x="231" y="103" text-anchor="middle" font-size="12">policy + context</text><text x="231" y="124" text-anchor="middle" font-size="12">memory + tools</text></g>
+            <g><rect x="320" y="42" width="122" height="116" rx="14" fill="#ffe2a8" stroke="#b56a00" /><text x="381" y="73" text-anchor="middle" class="mono" font-size="13">3 · DECIDE</text><text x="381" y="103" text-anchor="middle" font-size="12">model proposes</text><text x="381" y="124" text-anchor="middle" font-size="12">one next action</text></g>
+            <g><rect x="470" y="42" width="122" height="116" rx="14" fill="#ffd2cb" stroke="#e84f35" /><text x="531" y="73" text-anchor="middle" class="mono" font-size="13">4 · GUARD</text><text x="531" y="103" text-anchor="middle" font-size="12">check permission</text><text x="531" y="124" text-anchor="middle" font-size="12">validate input</text></g>
+            <g><rect x="620" y="42" width="122" height="116" rx="14" fill="#d9efc4" stroke="#4d8b34" /><text x="681" y="73" text-anchor="middle" class="mono" font-size="13">5 · EXECUTE</text><text x="681" y="103" text-anchor="middle" font-size="12">run in sandbox</text><text x="681" y="124" text-anchor="middle" font-size="12">or scoped API</text></g>
+            <g><rect x="770" y="42" width="122" height="116" rx="14" fill="#d9d2ff" stroke="#6653c7" /><text x="831" y="73" text-anchor="middle" class="mono" font-size="13">6 · VERIFY</text><text x="831" y="103" text-anchor="middle" font-size="12">check evidence</text><text x="831" y="124" text-anchor="middle" font-size="12">stop or loop</text></g>
+            <rect x="263" y="236" width="356" height="48" rx="24" fill="#17211f" /><text x="441" y="266" text-anchor="middle" class="mono light" font-size="13">FAILURE → TEST, POLICY, OR TOOL FIX</text>
+          </svg>
+        </div>
+        <p>Anthropic recommends ground truth from the environment at each step, plus checkpoints and stopping conditions.<sup><a href="#s2">[2]</a></sup> OpenAI also frames an agent run as a loop with explicit exit conditions, tool definitions, guardrails, and hooks.<sup><a href="#s3">[3]</a></sup></p>
+        <div class="code-panel" aria-label="Tool contract example"><pre><span class="c"># A narrow contract is easier to trust than a powerful generic tool</span>
+<span class="k">tool</span>: create_refund_request
+<span class="k">input</span>: order_id, reason, amount
+<span class="k">can_read</span>: order_status, payment_method
+<span class="k">cannot_do</span>: issue_refund, change_bank_account
+<span class="k">approval</span>: required when amount &gt; team_limit
+<span class="k">success_proof</span>: request_id + persisted_status
+<span class="k">on_unknown</span>: stop and hand off to human</pre></div>
+      </section>
+
+      <section id="industry">
+        <div class="kicker">04 · Industry proof</div><h2>What changes at enterprise scale</h2><p class="lead">At enterprise scale, we do not improve an agent only by choosing a larger model. We narrow its operating space and raise the quality of evidence it must produce.</p>
+        <div class="case-study"><div class="case-tag">Real example<br>Google security</div><div><h3>Specialists, structural proof, then human review</h3><p>Google reports a multi-agent security harness that scans code changes, uses local threat models, validates findings with program analysis, and proposes fixes for human review. The system separates scanning, triage, and fixing so each stage can challenge the previous one.<sup><a href="#s5">[5]</a></sup></p><div class="metrics"><span class="metric"><b>3%</b><small>false positives in some cases</small></span><span class="metric"><b>92%+</b><small>triage precision</small></span><span class="metric"><b>&lt; 1 min</b><small>triage time</small></span><span class="metric"><b>100s</b><small>vulnerabilities prevented monthly</small></span></div></div></div>
+        <div class="case-study"><div class="case-tag">Real pattern<br>Agent workflows</div><div><h3>Use autonomy only where the path is unknown</h3><p>Anthropic’s production guidance starts with simple, composable workflows. Route known ticket types through fixed paths. Use an agent for open-ended coding or research where the required steps cannot be known in advance.<sup><a href="#s2">[2]</a></sup></p></div></div>
+        <div class="pattern-grid"><div class="pattern"><h3>Banking and insurance</h3><p>Let the model interpret documents and detect exceptions. Let deterministic services calculate money. Require approval before payment, policy change, or customer communication.</p><span class="badge">GROUND → CALCULATE → APPROVE</span></div><div class="pattern"><h3>Healthcare operations</h3><p>Scope access by patient and purpose. Cite the source record for every summary. Block unsupported recommendations. Route clinical decisions to qualified people.</p><span class="badge">SCOPE → CITE → ESCALATE</span></div><div class="pattern"><h3>Software delivery</h3><p>Work in an isolated branch. Limit files and commands. Run build, tests, lint, security scans, and diff review. Never treat generated code as verified code.</p><span class="badge">SANDBOX → TEST → REVIEW</span></div><div class="pattern"><h3>IT operations</h3><p>Start with read-only diagnosis. Generate a change plan. Simulate when possible. Require approval for production. Verify service health after the action.</p><span class="badge">OBSERVE → PLAN → VERIFY</span></div></div>
+      </section>
+
+      <section id="practice">
+        <div class="kicker">05 · Delivery playbook</div><h2>How we can practise harness engineering</h2><p class="lead">As developers in IT services, we should build reusable controls once, then configure them for each client, domain, and risk level.</p>
+        <ol class="playbook"><li><div><b>Define the job and the stop condition</b><p>Write what the agent may achieve, what is out of scope, and what proof means “done”. Prefer a workflow when steps are known.</p></div></li><li><div><b>Classify every tool by risk</b><p>Read tools can run automatically. Writes need stronger validation. Irreversible or external actions need human approval.</p></div></li><li><div><b>Use client specific policy packs</b><p>Keep retention, PII handling, geography, approval limits, and allowed systems outside the prompt. Version them like code.</p></div></li><li><div><b>Create a golden evaluation set early</b><p>Include normal tasks, incomplete inputs, conflicting instructions, permission failures, tool timeouts, and prompt injection attempts.</p></div></li><li><div><b>Trace the whole run</b><p>Google’s guidance calls for logs, metrics, and traces across model calls and tools.<sup><a href="#s4">[4]</a></sup> Add business outcomes such as task completion and human correction rate.</p></div></li><li><div><b>Turn incidents into permanent improvements</b><p>Add each failure to regression tests. Then fix the right layer: context, tool contract, policy, verifier, or recovery path.</p></div></li><li><div><b>Prove model portability</b><p>Run the same evaluations across model versions. Choose by quality, latency, cost, and risk. Do not make model brand the architecture.</p></div></li></ol>
+      </section>
+
+      <section id="lab">
+        <div class="kicker">06 · Companion lab</div><h2>Make the difference visible in one small repo</h2><p class="lead">If we want other developers to feel the difference, we should run the same task twice. The model and prompt stay similar. Only the harness changes.</p>
+        <div class="lab-compare">
+          <div class="lab-side without"><h3>Version A: SDK call only</h3><p>A minimal Anthropic SDK script answers a request and can call one tool.</p><ul><li>API key comes from an environment variable.</li><li>No input schema beyond the prompt.</li><li>No tool permission check.</li><li>No bounded retry or success proof.</li><li>Useful for learning, not production.</li></ul></div>
+          <div class="lab-vs">VS</div>
+          <div class="lab-side with"><h3>Version B: same agent, harnessed</h3><p>The same task runs through a small, readable control layer.</p><ul><li>Typed input and output validation.</li><li>Allowlisted tool with a risk level.</li><li>Step limit, timeout, and retry budget.</li><li>Approval gate before a write.</li><li>Structured trace and deterministic verifier.</li></ul></div>
+        </div>
+        <p><strong>The example we would build:</strong> we ask both versions to read a sample service incident, inspect a small local knowledge base, and prepare a remediation plan. Version B must cite the evidence it used, reject prompt injection inside the incident text, and stop before any simulated production change. That gives our teammates something concrete to run, break, and discuss.</p>
+        <div class="repo-plan"><h3>Proposed public repository after content sign-off</h3><ul><li><strong><code>01-without-harness/</code></strong> shows the short SDK-only path and its limits.</li><li><strong><code>02-with-harness/</code></strong> adds policy, tool contracts, verification, tracing, and recovery.</li><li><strong><code>tests/</code></strong> contains happy path, tool failure, permission denial, malformed output, and prompt injection cases.</li><li><strong><code>.env.example</code></strong> names <code>ANTHROPIC_API_KEY</code>. The real key is never committed.</li><li><strong><code>README.md</code></strong> explains the architecture, run steps, expected output, and safe cleanup.</li></ul><span class="repo-status">CONTENT FIRST · CODE AFTER REVIEW</span></div>
+      </section>
+
+      <section id="checklist">
+        <div class="kicker">07 · Design review</div><h2>The 10 minute harness review</h2><p class="lead">This is the quick review we can run together before a pilot, a client demo, or a production change.</p>
+        <div class="check-box"><div class="check-head"><h3>Production readiness checklist</h3><button class="copy-btn" id="copyBtn" type="button">Copy checklist</button></div><ul class="checklist" id="checklistItems"><li>The goal, scope, owner, and stop condition are explicit.</li><li>Each tool has typed inputs, typed outputs, and clear errors.</li><li>Credentials and data access follow least privilege.</li><li>External and irreversible actions require approval.</li><li>Retries are bounded and duplicate actions are prevented.</li><li>Long runs have checkpoints, cancellation, and safe resume.</li><li>Outputs are verified against source systems or deterministic checks.</li><li>Traces capture decisions, tool calls, latency, cost, and policy events.</li><li>Sensitive values are redacted from prompts, traces, and logs.</li><li>Known failures are part of a versioned evaluation suite.</li></ul></div>
+      </section>
+
+      <section id="sources">
+        <div class="kicker">Further reading</div><h2>Sources worth keeping</h2>
+        <div class="sources"><div class="source" id="s1"><span class="source-num">[1]</span><div><strong>AI Engineer: Agent Harness</strong><p>Control layer, lifecycle, shared state, permissions, and human interaction.</p></div><a href="https://www.youtube.com/watch?v=-ESSuPpJ5r8" target="_blank" rel="noopener noreferrer">WATCH ↗</a></div><div class="source" id="s2"><span class="source-num">[2]</span><div><strong>Anthropic: Building Effective AI Agents</strong><p>Workflows, agent loops, orchestration patterns, testing, and simplicity.</p></div><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener noreferrer">READ ↗</a></div><div class="source" id="s3"><span class="source-num">[3]</span><div><strong>OpenAI: A Practical Guide to Building Agents</strong><p>Model, tools, instructions, orchestration, guardrails, and exit conditions.</p></div><a href="https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf" target="_blank" rel="noopener noreferrer">PDF ↗</a></div><div class="source" id="s4"><span class="source-num">[4]</span><div><strong>Google Cloud: Agent Observability</strong><p>Logs, metrics, traces, token use, tool outcomes, safety, and evaluation.</p></div><a href="https://docs.cloud.google.com/stackdriver/docs/observability/agent-observability" target="_blank" rel="noopener noreferrer">READ ↗</a></div><div class="source" id="s5"><span class="source-num">[5]</span><div><strong>Google Cloud: AI Agents for Infrastructure Security</strong><p>A real multi-agent scanning, triage, verification, and repair harness.</p></div><a href="https://cloud.google.com/blog/topics/systems/using-ai-agents-to-secure-google-infrastructure" target="_blank" rel="noopener noreferrer">READ ↗</a></div></div>
+      </section>
+
+      <div class="takeaway"><h2>Our competitive edge is not just a smarter model.</h2><p>It is the harness we build around it: the layer that makes good behaviour repeatable, bad behaviour visible, and risky behaviour controllable. When that layer is built well, every model upgrade becomes safer to adopt.</p></div>
+    </article>
+  </main>
+  <footer>Prepared as a practical engineering note. Validate all controls against each client’s security, legal, compliance, and operational requirements.</footer>
+  <script>
+    (function(){
+      var progress=document.getElementById('progress');
+      var links=Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+      var sections=links.map(function(link){return document.querySelector(link.getAttribute('href'));}).filter(Boolean);
+      function updateProgress(){
+        var max=document.documentElement.scrollHeight-window.innerHeight;
+        var ratio=max>0?window.scrollY/max:0;
+        progress.style.transform='scaleX('+Math.min(1,Math.max(0,ratio))+')';
+        var current='';
+        sections.forEach(function(section){if(section.getBoundingClientRect().top<170)current='#'+section.id;});
+        links.forEach(function(link){link.classList.toggle('active',link.getAttribute('href')===current);});
+      }
+      window.addEventListener('scroll',updateProgress,{passive:true}); updateProgress();
+      var copyButton=document.getElementById('copyBtn');
+      copyButton.addEventListener('click',function(){
+        var items=Array.prototype.slice.call(document.querySelectorAll('#checklistItems li'));
+        var text='AI agent harness production readiness\n\n'+items.map(function(item){return '• '+item.textContent.trim();}).join('\n');
+        navigator.clipboard.writeText(text).then(function(){var original=copyButton.textContent; copyButton.textContent='Copied'; setTimeout(function(){copyButton.textContent=original;},1600);}).catch(function(){copyButton.textContent='Select and copy';});
+      });
+    }());
+  </script>
+</body>
+</html>
