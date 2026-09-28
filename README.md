@@ -22,7 +22,12 @@ This repo holds the companion material for the blog post **"The Harness Playbook
 ```bash
 cd examples
 npm install
-export ANTHROPIC_API_KEY="your_key_here"
+cp .env.example .env   # Windows: copy .env.example .env
+```
+
+Open `.env`, paste your Anthropic API key, then:
+
+```bash
 npm run without   # no harness
 npm run with      # with harness
 ```
