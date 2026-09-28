@@ -1,0 +1,5 @@
+# Secrets and local junk. Never commit these.
+.env
+node_modules/
+dist/
+run-log.jsonl
