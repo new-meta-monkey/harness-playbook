@@ -2,7 +2,7 @@
  * WITHOUT harness: one prompt, one call, fingers crossed.
  *
  * Run:  npm run without
- * Needs: ANTHROPIC_API_KEY in your environment.
+ * Needs: a .env file with ANTHROPIC_API_KEY (copy .env.example to .env).
  *
  * What is missing here (compare with with-harness.ts):
  *  - the model never touches the data through a controlled tool
@@ -11,13 +11,23 @@
  *  - the money rule ("flag claims above the limit") lives only in
  *    English inside the prompt, where the model may ignore it
  */
+import "dotenv/config";
+import { consola } from "consola";
 import Anthropic from "@anthropic-ai/sdk";
 import { readFileSync } from "node:fs";
 
+if (!process.env.ANTHROPIC_API_KEY) {
+  consola.error("ANTHROPIC_API_KEY is missing.");
+  consola.info("Copy .env.example to .env, paste your key, then run again.");
+  process.exit(1);
+}
+
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY from env
+const client = new Anthropic();
 
 const csv = readFileSync(new URL("./data/expenses.csv", import.meta.url), "utf8");
+
+consola.start(`Asking ${MODEL} with no harness and no safety nets...`);
 
 const response = await client.messages.create({
   model: MODEL,
@@ -36,7 +46,7 @@ const response = await client.messages.create({
 
 const text =
   response.content.find((b) => b.type === "text")?.text ?? "(no text)";
-console.log(text);
 
-// That's it. Whatever the model printed is the final answer.
-// No validation. No log. No second chance.
+consola.box("Model answer (used as-is, no checks)");
+consola.log(text);
+consola.warn("No validation. No log. No second chance. Whatever was printed is final.");
