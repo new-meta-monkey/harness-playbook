@@ -2,7 +2,7 @@
  * WITH harness: the same model, wrapped in a small harness.
  *
  * Run:  npm run with
- * Needs: ANTHROPIC_API_KEY in your environment.
+ * Needs: a .env file with ANTHROPIC_API_KEY (copy .env.example to .env).
  *
  * Harness layers in this file (each one is marked below):
  *  1. TOOLS         - the model can only touch data through read_expenses
@@ -11,14 +11,23 @@
  *                     match a schema or we ask the model to fix it.
  *  3. LOOP LIMIT    - max 6 steps. The agent stops even if it wants
  *                     to keep going. Cost and chaos stay bounded.
- *  4. OBSERVABILITY - every step is appended to run-log.jsonl.
+ *  4. OBSERVABILITY - every step is logged to the terminal AND
+ *                     appended to run-log.jsonl for audits.
  *  5. HUMAN IN LOOP - claims above REVIEW_LIMIT are marked
  *                     needs_review. The harness never auto-decides them.
  *  6. DETERMINISTIC POLICY - the money rule lives in code (below),
  *                     not in English inside the prompt.
  */
+import "dotenv/config";
+import { consola } from "consola";
 import Anthropic from "@anthropic-ai/sdk";
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+
+if (!process.env.ANTHROPIC_API_KEY) {
+  consola.error("ANTHROPIC_API_KEY is missing.");
+  consola.info("Copy .env.example to .env, paste your key, then run again.");
+  process.exit(1);
+}
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
 const client = new Anthropic();
@@ -43,7 +52,7 @@ interface Flag {
   severity: "flag" | "needs_review";
 }
 
-// ---- Observability: log every step ----
+// ---- Observability: terminal + audit file ----
 function log(step: string, data: unknown) {
   appendFileSync(
     LOG_FILE,
@@ -122,6 +131,7 @@ function validReport(obj: unknown): obj is { flags: Flag[]; reviewed_claims: num
 async function main() {
   writeFileSync(LOG_FILE, ""); // fresh log per run
   log("start", { model: MODEL, policy_limit_inr: POLICY_LIMIT_INR });
+  consola.start(`Harness run started. Model: ${MODEL}, max ${MAX_STEPS} steps.`);
 
   const messages: Anthropic.MessageParam[] = [
     {
@@ -156,12 +166,14 @@ async function main() {
         const report = JSON.parse(json);
         if (validReport(report)) {
           log("report-accepted", report);
+          consola.success(`Step ${step}: final report passed the schema check.`);
           break;
         }
       } catch {
         // fall through to the fix-up prompt
       }
       log("report-rejected", { text: text.slice(0, 200) });
+      consola.warn(`Step ${step}: report failed the schema check, asking the model to fix it.`);
       messages.push({ role: "assistant", content: response.content });
       messages.push({
         role: "user",
@@ -184,10 +196,12 @@ async function main() {
               ? flagClaim({ claim_id: input.claim_id, reason: input.reason })
               : `Unknown tool: ${use.name}`;
         log(`step-${step}-tool`, { tool: use.name, ok: true });
+        consola.info(`Step ${step}: tool ${use.name} ran clean.`);
         results.push({ type: "tool_result", tool_use_id: use.id, content: out });
       } catch (err) {
         // Tool errors go back to the model as data, not as crashes.
         log(`step-${step}-tool`, { tool: use.name, ok: false });
+        consola.error(`Step ${step}: tool ${use.name} failed: ${(err as Error).message}`);
         results.push({
           type: "tool_result",
           tool_use_id: use.id,
@@ -208,18 +222,22 @@ async function main() {
         reason: `INR ${c.amount_inr} exceeds human-review limit`,
         severity: "needs_review",
       });
+      consola.warn(`${c.claim_id}: INR ${c.amount_inr} needs a human review.`);
     }
   }
 
-  console.log("\nFinal flags:");
+  consola.box("Final flags");
   for (const f of flags) {
-    const tag = f.severity === "needs_review" ? "NEEDS HUMAN REVIEW" : "flagged";
-    console.log(` - ${f.claim_id}: ${f.reason} [${tag}]`);
+    if (f.severity === "needs_review") {
+      consola.warn(`${f.claim_id}: ${f.reason} [NEEDS HUMAN REVIEW]`);
+    } else {
+      consola.info(`${f.claim_id}: ${f.reason} [flagged]`);
+    }
   }
-  console.log(`\nFull trace: ${LOG_FILE}`);
+  consola.success(`Done. Full audit trace: ${LOG_FILE}`);
 }
 
 main().catch((err) => {
-  console.error("Harness stopped the run:", (err as Error).message);
+  consola.error("Harness stopped the run:", (err as Error).message);
   process.exit(1);
 });
