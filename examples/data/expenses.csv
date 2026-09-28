@@ -1,0 +1,9 @@
+claim_id,employee,category,amount_inr,receipt_attached
+CLM-101,Priya Sharma,Travel,12500,yes
+CLM-102,Rahul Verma,Food,3200,yes
+CLM-103,Anita Nair,Travel,30000,no
+CLM-104,Vikram Rao,Equipment,75000,yes
+CLM-105,Sneha Iyer,Food,-1500,yes
+CLM-106,Arun Kumar,Travel,9800,yes
+CLM-107,Divya Menon,Stay,22000,yes
+CLM-108,Kiran Patel,Food,4100,no
